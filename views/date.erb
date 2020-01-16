@@ -1,0 +1,7 @@
+<h2> <%= @date %> </h2>
+<% @data.each do |cycle| %>
+  <p>--</p>
+  <p>Focus: <%= format_time_object(cycle[:focus_start_time])%> - <%= format_time_object(cycle[:rest_start_time])%></p>
+  <p>Rest: <%= format_time_object(cycle[:rest_start_time])%> - <%= format_time_object(cycle[:rest_end_time])%></p>
+  <p>Total: <%= format_seconds(cycle[:rest_end_time] - cycle[:focus_start_time]) %> seconds</p>
+<% end %>
