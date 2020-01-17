@@ -1,6 +1,6 @@
 require "sinatra"
 require "sinatra/reloader" if development?
-require "sinatra/content_for" # Do I need this?
+# require "sinatra/content_for" # Do I need this?
 require "tilt/erubis"
 require "yaml"
 
@@ -90,11 +90,6 @@ def calculate_next_suggested_focus_session
   end
 end
 
-# def set_session_start_time
-#   return unless session[:focus_start_time]
-#   session[:session_start_time] = session[:focus_start_time]
-# end
-
 def set_session_end_time
   session[:session_end_time] = session[:focus_start_time]
 end
@@ -110,10 +105,6 @@ def generate_cycle
     rest_end_time: session[:rest_end_time]
   }
 end
-
-# def generate_date
-#   session[:focus_start_time].strftime("%d/%m/%Y")
-# end
 
 def update_data
   if ENV["RACK_ENV"] == "test"
@@ -146,6 +137,25 @@ def data_path
   end
 end
 
+def generate_date_list(data)
+  @list = []
+
+  data.each do |cycle|
+    date = cycle[:focus_start_time].strftime("%d-%m-%Y")
+    @list << date unless @list.include?(date)
+  end
+
+  @list
+end
+
+def load_user_data
+  if ENV["RACK_ENV"] == "test"
+    YAML.load(File.read("test/user_data.yml"))
+  else
+    YAML.load(File.read("data/user_data.yml"))
+  end
+end
+
 get "/" do
   erb :home
 end
@@ -165,7 +175,6 @@ post "/focus" do
 end
 
 get "/focus" do
-
   @focus_start_time = format_time_object(session[:focus_start_time])
   @suggested_rest_time = format_time_object(calculate_suggested_rest_time)
   @data = YAML.load(File.read("data/user_data.yml"))
@@ -190,29 +199,8 @@ get "/rest" do
   erb :rest
 end
 
-post "/reset" do
-  session[:accumulated_rest_time] = 0
-  session[:focus_start_time] = nil
-  session[:rest_start_time] = nil
-  session[:elapsed_time_rested] = 0
-  session[:elapsed_time_focused] = 0
-
-  redirect "/"
-end
-
-def generate_date_list(data)
-  @list = []
-
-  data.each do |cycle|
-    date = cycle[:focus_start_time].strftime("%d-%m-%Y")
-    @list << date unless @list.include?(date)
-  end
-
-  @list
-end
-
 get "/log" do
-  @data = YAML.load(File.read("data/user_data.yml"))
+  @data = load_user_data
 
   erb :log
 end
@@ -225,10 +213,20 @@ end
 
 get "/log/:date" do
   @date = params[:date].gsub('-', '/')
-  data = YAML.load(File.read("data/user_data.yml"))
+  data = load_user_data
   @data = return_cycles_from_date(data, @date)
 
   erb :date
+end
+
+post "/reset" do
+  session[:accumulated_rest_time] = 0
+  session[:focus_start_time] = nil
+  session[:rest_start_time] = nil
+  session[:elapsed_time_rested] = 0
+  session[:elapsed_time_focused] = 0
+
+  redirect "/"
 end
 
 =begin
@@ -428,6 +426,9 @@ layout
         - goes to date view template
 
       date view template
+
+
+      - make rest and foucs one page that goggles content and buttons
 
 
 

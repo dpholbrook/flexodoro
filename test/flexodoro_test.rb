@@ -116,5 +116,20 @@ class AppTest < Minitest::Test
     assert_includes last_response.body, "Rest not recommended."
   end
 
+  def test_log
+    get "/log"
+
+    assert_equal last_response.status, 200
+    assert_includes last_response.body, "16-01-2020"
+  end
+
+  def test_log_on_date
+    get "/log/16-01-2020"
+
+    assert_equal last_response.status, 200
+    assert_includes last_response.body, "16/01/2020"
+    assert_includes last_response.body, "Focus: 11:23:38 AM - 11:23:39 AM"
+  end
+
 
 end
