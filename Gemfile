@@ -5,6 +5,7 @@ gem "sinatra-contrib" # do I need this?
 gem "erubis"
 gem "rack-test"
 gem "minitest"
-gem "pry" 
+gem "pry"
+gem "bcrypt"
 
 ruby "2.4.4"

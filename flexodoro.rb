@@ -3,6 +3,7 @@ require "sinatra/reloader" if development?
 # require "sinatra/content_for" # Do I need this?
 require "tilt/erubis"
 require "yaml"
+require "bcrypt"
 
 configure do
   enable :sessions
@@ -106,19 +107,14 @@ def generate_cycle
   }
 end
 
-def update_data
+def load_cycle_data
   if ENV["RACK_ENV"] == "test"
-    data = []
+    YAML.load(File.read("test/data/user_data.yml"))
+  elsif YAML.load(File.read("data/user_data.yml"))
+    YAML.load(File.read("data/user_data.yml"))
   else
-    data = if YAML.load(File.read("data/user_data.yml"))
-      YAML.load(File.read("data/user_data.yml"))
-    else
-      []
-    end
+    []
   end
-
-  cycle = generate_cycle
-  data << cycle
 end
 
 def write_data(data)
@@ -127,6 +123,13 @@ def write_data(data)
   else
     File.open("data/user_data.yml", "w") { |file| file.write(data.to_yaml) }
   end
+end
+
+def log_cycle
+  data = load_cycle_data
+  cycle = generate_cycle
+  data << cycle
+  write_data(data)
 end
 
 def data_path
@@ -150,20 +153,86 @@ end
 
 def load_user_data
   if ENV["RACK_ENV"] == "test"
-    YAML.load(File.read("test/user_data.yml"))
+    YAML.load(File.read("test/data/user_data.yml"))
   else
     YAML.load(File.read("data/user_data.yml"))
   end
 end
 
+def return_cycles_from_date(data, date)
+  data.select do |cycle|
+    cycle[:focus_start_time].strftime("%d/%m/%Y") == date
+  end
+end
+
+def load_user_credentials
+  credentials_path = if ENV["RACK_ENV"] == "test"
+    File.expand_path("../test/users.yml", __FILE__)
+  else
+    File.expand_path("../users.yml", __FILE__)
+  end
+    YAML.load_file(credentials_path)
+end
+
+def valid_credentials?(given_username, given_password)
+  credentials = load_user_credentials
+
+  if credentials.key?(given_username)
+    stored_password_hash = credentials[given_username]
+    BCrypt::Password.new(stored_password_hash) == given_password
+  else
+    false
+  end
+end
+
+def load_users
+  if ENV["RACK_ENV"] == "test"
+    YAML.load(File.read("test/data/users.yml"))
+  elsif YAML.load(File.read("users.yml"))
+    YAML.load(File.read("users.yml"))
+  else
+    {}
+  end
+end
+
+def write_to_users(data)
+  if ENV["RACK_ENV"] == "test"
+    File.open("test/data/users.yml", "w") { |file| file.write(data.to_yaml) }
+  else
+    File.open("users.yml", "w") { |file| file.write(data.to_yaml) }
+  end
+end
+
+def unique?(username, data)
+  !data.include?(username)
+end
+
 get "/" do
-  erb :home
+  if !session[:focus] && !end_of_cycle?
+     erb :home
+  elsif session[:focus] == true
+    @focus_start_time = format_time_object(session[:focus_start_time])
+    @suggested_rest_time = format_time_object(calculate_suggested_rest_time)
+    # @data = YAML.load(File.read("data/user_data.yml"))
+    # @accumulated_rest_time = format_seconds(session[:accumulated_rest_time])
+    erb :focus
+    # "#{session[:focus]}"
+  else
+    @rest_mode_start_time = format_time_object(session[:rest_start_time])
+    session[:next_suggested_focus_mode] = session[:rest_start_time] + session[:accumulated_rest_time]
+    @next_suggested_focus_message = calculate_next_suggested_focus_session
+    # @accumulated_rest_time = format_seconds(session[:accumulated_rest_time])
+
+    erb :rest
+  end
 end
 
 post "/focus" do
+  session[:focus] = true
+
   if end_of_cycle?
     set_rest_end_time
-    write_data(update_data)
+    log_cycle
     session[:focus_start_time] = session[:rest_end_time]
     session[:elapsed_time_rested] = calculate_time_rested
     decrement_accumulated_rest_time
@@ -171,44 +240,23 @@ post "/focus" do
     set_focus_start_time
   end
 
-  redirect "/focus"
-end
-
-get "/focus" do
-  @focus_start_time = format_time_object(session[:focus_start_time])
-  @suggested_rest_time = format_time_object(calculate_suggested_rest_time)
-  @data = YAML.load(File.read("data/user_data.yml"))
-  # @accumulated_rest_time = format_seconds(session[:accumulated_rest_time])
-  erb :focus
+  redirect "/"
 end
 
 post "/rest" do
+  session[:focus] = false
+
   set_rest_start_time
   calculate_elapsed_time_focused
   calculate_new_rest_time
   incriment_accumulated_rest_time
-  redirect "/rest"
-end
-
-get "/rest" do
-  @rest_mode_start_time = format_time_object(session[:rest_start_time])
-  session[:next_suggested_focus_mode] = session[:rest_start_time] + session[:accumulated_rest_time]
-  @next_suggested_focus_message = calculate_next_suggested_focus_session
-  # @accumulated_rest_time = format_seconds(session[:accumulated_rest_time])
-
-  erb :rest
+  redirect "/"
 end
 
 get "/log" do
   @data = load_user_data
 
   erb :log
-end
-
-def return_cycles_from_date(data, date)
-  data.select do |cycle|
-    cycle[:focus_start_time].strftime("%d/%m/%Y") == date
-  end
 end
 
 get "/log/:date" do
@@ -220,6 +268,7 @@ get "/log/:date" do
 end
 
 post "/reset" do
+  session[:focus] = false
   session[:accumulated_rest_time] = 0
   session[:focus_start_time] = nil
   session[:rest_start_time] = nil
@@ -229,207 +278,48 @@ post "/reset" do
   redirect "/"
 end
 
-=begin
+get "/sign_in" do
+  erb :sign_in
+end
 
-write tests for log
+post "/sign_in" do
+  credentials = load_user_credentials
+  username = params[:username]
+  password = params[:password]
 
-when you go to log, where do you go from there? if you were in focus mode, you
+  if valid_credentials?(username, password)
+    session[:username] = username
+    redirect "/" # redirect produces a 302 Found status code
+  else
+    session[:message] = "Invalid Credentials."
+    status 422 # Unprocessable Entity
+    erb :sign_in
+  end
+end
 
-main navigation would be nice, but if you are in focus mode, you shouldn't be able to go to focus mode
+get "/sign_out" do
+  session.delete(:username)
 
-total time for each day
+  redirect "/"
+end
 
+get "/sign_up" do
+  erb :sign_up
+end
 
-User clicks focus button
-New rest time is added to existing rest time and saved
-Starts focus timer
-Button turns into Rest button
+post "/sign_up" do
+  username = params[:username]
+  password = BCrypt::Password.create(params[:password]).to_s
+  data = load_users
 
-home page
-  - displays home page view
-    - focus button
-
-focus button
-  - user posts focus request
-  - user is redirected to '/focus' route
-
-focus route
-  - creates focus start time and stores in session
-  - creates suggested rest time
-
-  - displays focus view template
-    - start time
-    - suggested rest time
-      - displays rest button
-
-rest button
-  - sends post request to '/rest'
-
-post '/rest' route
-  - redirects to get 'rest' route
-
-get '/rest' route
-  - records current time (when focus mode was stopped)
-  - retrieves the start time of the last focus session
-  - the difference is the focus duration
-  - focus duration / 5 is rest accumulated
-  - total rest is new rest time plus existing rest time
-  - displays rest view template
-    - displays the last focus time and new rest time
-    - displays total rest time accumulated
-
-reset button
-  - post request '/reset'
-    - clears session
-    - redirects home
-
-layout
-  - reset button
-  - log of each focus session
-
-  - Calculating focus time
-    - focus post request sets start time
-    - rest post request sets rest_start_time
-    - subtract the two for total focused time to be logged
-      - returns weird time
-      - use total focused time to calculate banked rest time
-
-  - Count down rest time
-    - when rest button is clicked, rest time starts
-    - when focus button is clicked, focus time starts
-    - subtract those two to determine amount of time rested
-    - subtract that amount from accumulated rest time
-      - ensure that negative number works
-
-  - Convert seconds to hours, minutes, seconds
-
-  - if rest reserves is in negative numbers,
-    - adjust suggested rest time to study until 5 minutes of rest gained
-
-  - in rest mode
-    - if next suggested foucus time is before rest start time
-      - then output text "Resting is not reccommended. You have no rest reserves."
-
-      - Log sessions
-        - session number
-        - focus mode session
-        - rest mode session
-        - total time
-
-        - grand total time
-
-        - session is created when rest button is clicked
-
-        - focus session
-          - focus start time
-          - focus end time/ rest start time
-
-        - rest session
-          - rest start time
-          - rest end time/ focus start time
-
-        - total time is focus time + rest time + rest reserves if reserves are negative
-
-        session: { session_1: {
-                              focus_start_time: x,
-                              rest_start_time: y,
-                              next_session_focus_start_time: z,
-                              total_time: q
-                              }}
-
-        session: { session_1: {
-                              focus_start_time: x,
-                              rest_start_time: y,
-                              next_session_focus_start_time: z,
-                              total_time: q
-                              }}
-
-                              {
-  users: {
-    drew: {
-      1 / 12 / 20: {
-        session_1: {
-          focus_start: 'x',
-          rest_start: 'y',
-          total_time: 'z'
-        }
-        session_2: {
-        }
-      }
-    }
-  }
-}
-
-      - users
-        - each has their own file or one big file with all user data?
-
-
-        - write data to user file
-          - when focus clicked for second time
-            - write new session data to yaml file:
-              user_data[:current_date][session][focus_start:] = x
-
-
-        -  read user data in log
-          - create object form yaml file
-            - for each date
-              - for each session
-                - print out study start and stop time and duration
-
-            {
-              1 / 12 / 20: {
-                session_1: {
-                  focus_start: 'x',
-                  rest_start: 'y',
-                  total_time: 'z'
-                }
-                session_2: {
-                }
-              }
-
-    log session
-      - session[:data][:date][:session_number][:focus_start] = session[:focus_start]
-      -
-
-      log cycle
-        - data = {
-                   1/12/20: [
-                              { focus_start: time, rest_start: time, rest_end: time },
-                              { focus_start: time, rest_start: time, rest_end: time }
-                            ]
-                 }
-        - date is the date of the start time
-        - cycle = {focus_start, rest_start, rest_end}
-        - data[date] << cycle
-
-  - create log route
-    - route displays the parsed user data from yaml file
-    - create route for log
-    - display parsed data from yaml file
-      - create data object from yaml file
-        - for each cycle hash
-          - start time is formatted start time
-          - break time
-          - break end time
-          - total cycle time
-      -
-
-      for each date that exists, create a link
-      links to rout for that date
-
-      date route
-        - set date from params
-        - set data from yaml
-          - return cycles from that date
-            - iterate on data
-            - select any hash that includes that date
-        - goes to date view template
-
-      date view template
-
-
-      - make rest and foucs one page that goggles content and buttons
-
-
-
-=end
+  if unique?(username, data)
+    data[username] = password
+    write_to_users(data)
+    session[:message] = "Account successfully created."
+    redirect "/sign_in"
+  else
+    status 422
+    session[:message] = "That username is already taken."
+    erb :sign_up
+  end
+end
