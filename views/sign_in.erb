@@ -1,0 +1,14 @@
+<form method="post" action="/sign_in">
+  <div>
+    <label for="username">Username:</label>
+    <input name="username" placeholder="" type="text" value="<%= params[:username] %>">
+  </div>
+  </div>
+    <label for="password">Password:</label>
+    <input name="password" placeholder="" type="text" value="">
+  </div>
+  <div>
+    <button type="submit">Sign In</button>
+  </div>
+  <p>Don't have an account? <a href="/sign_up">Sign Up!</a><p>
+</form>
