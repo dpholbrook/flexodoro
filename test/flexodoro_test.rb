@@ -56,6 +56,7 @@ class AppTest < Minitest::Test
   def test_second_focus_button_click
     create_yaml_file "user_data.yml", "[]"
     post "/focus", {}, { "rack.session" => {
+                                             focus_start_time: Time.new(2020, 1, 12, 7, 30, 0),
                                              rest_start_time: Time.new(2020, 1, 12, 7, 55, 0),
                                              accumulated_rest_time: 300
                                             } }
@@ -129,11 +130,11 @@ class AppTest < Minitest::Test
                                             }}
     get "/log"
     assert_equal 200, last_response.status
-    assert_includes last_response.body, "12-01-2020"
+    assert_includes last_response.body, "01-12-2020"
 
-    get "/log/12-01-2020"
+    get "/log/01-12-2020"
     assert_equal 200, last_response.status
-    assert_includes last_response.body, "12/01/2020"
+    assert_includes last_response.body, "01-12-2020"
     assert_includes last_response.body, "Focus: 07:30:00 AM - 07:55:00 AM"
   end
 
@@ -182,5 +183,6 @@ class AppTest < Minitest::Test
     assert_includes last_response.body, %q(<button type="submit">Sign In)
   end
 
+  
 
 end

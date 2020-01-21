@@ -1,9 +1,10 @@
 require "sinatra"
 require "sinatra/reloader" if development?
-# require "sinatra/content_for" # Do I need this?
 require "tilt/erubis"
 require "yaml"
 require "bcrypt"
+require "redcarpet"
+require "pry" if development?
 
 configure do
   enable :sessions
@@ -22,8 +23,12 @@ def format_time_object(time)
   time.strftime("%I:%M:%S %p")
 end
 
-def format_seconds(seconds)
-  sprintf("%d", seconds)
+def formatted_duration(total_seconds)
+  hours = total_seconds / (60 * 60)
+  minutes = (total_seconds / 60) % 60
+  seconds = total_seconds % 60
+
+  sprintf("%02d:%02d:%02d", hours, minutes, seconds)
 end
 
 def calculate_elapsed_time_focused
@@ -55,29 +60,45 @@ def calculate_suggested_rest_time
   end
 end
 
-def set_focus_start_time
+def set_time(at)
   if ENV["RACK_ENV"] == "test"
-    session[:focus_start_time] = Time.new(2020, 1, 12, 8, 0, 0)
+    case at
+    when "focus start" then session[:focus_start_time] = Time.new(2020, 1, 12, 8, 0, 0)
+    when "rest start" then session[:rest_start_time] = Time.new(2020, 1, 12, 8, 25, 0)
+    when "rest end" then session[:rest_end_time] = Time.new(2020, 1, 12, 8, 0, 0)
+    end
   else
-    session[:focus_start_time] = Time.new
+    case at
+    when "focus start" then session[:focus_start_time] = Time.new
+    when "rest start" then session[:rest_start_time] = Time.new
+    when "rest end" then session[:rest_end_time] = Time.new
+    end
   end
 end
 
-def set_rest_start_time
-  if ENV["RACK_ENV"] == "test"
-    session[:rest_start_time] = Time.new(2020, 1, 12, 8, 25, 0)
-  else
-    session[:rest_start_time] = Time.new
-  end
-end
-
-def set_rest_end_time
-  if ENV["RACK_ENV"] == "test"
-    session[:rest_end_time] = Time.new(2020, 1, 12, 8, 0, 0)
-  else
-    session[:rest_end_time] = Time.new
-  end
-end
+# def set_focus_start_time
+#   if ENV["RACK_ENV"] == "test"
+#     session[:focus_start_time] = Time.new(2020, 1, 12, 8, 0, 0)
+#   else
+#     session[:focus_start_time] = Time.new
+#   end
+# end
+#
+# def set_rest_start_time
+#   if ENV["RACK_ENV"] == "test"
+#     session[:rest_start_time] = Time.new(2020, 1, 12, 8, 25, 0)
+#   else
+#     session[:rest_start_time] = Time.new
+#   end
+# end
+#
+# def set_rest_end_time
+#   if ENV["RACK_ENV"] == "test"
+#     session[:rest_end_time] = Time.new(2020, 1, 12, 8, 0, 0)
+#   else
+#     session[:rest_end_time] = Time.new
+#   end
+# end
 
 def rest_reserves_remaining?
   session[:next_suggested_focus_mode] > session[:rest_start_time]
@@ -91,37 +112,46 @@ def calculate_next_suggested_focus_session
   end
 end
 
-def set_session_end_time
-  session[:session_end_time] = session[:focus_start_time]
-end
+# def set_session_end_time
+#   session[:session_end_time] = session[:focus_start_time]
+# end
 
 def end_of_cycle?
   session[:rest_start_time]
+end
+
+def calculate_cycle_duration
+  session[:rest_end_time] - session[:focus_start_time]
 end
 
 def generate_cycle
   {
     focus_start_time: session[:focus_start_time],
     rest_start_time: session[:rest_start_time],
-    rest_end_time: session[:rest_end_time]
+    rest_end_time: session[:rest_end_time],
+    cycle_duration: calculate_cycle_duration
   }
 end
 
 def load_cycle_data
+  user = session[:username]
+
   if ENV["RACK_ENV"] == "test"
     YAML.load(File.read("test/data/user_data.yml"))
-  elsif YAML.load(File.read("data/user_data.yml"))
-    YAML.load(File.read("data/user_data.yml"))
+  elsif File.exist?("data/#{user}_data.yml")
+    YAML.load(File.read("data/#{user}_data.yml"))
   else
     []
   end
 end
 
 def write_data(data)
+  user = session[:username]
+
   if ENV["RACK_ENV"] == "test"
     File.open("test/data/user_data.yml", "w") { |file| file.write(data.to_yaml) }
   else
-    File.open("data/user_data.yml", "w") { |file| file.write(data.to_yaml) }
+    File.open("data/#{user}_data.yml", "w") { |file| file.write(data.to_yaml) }
   end
 end
 
@@ -140,28 +170,44 @@ def data_path
   end
 end
 
+def total_time_for_date(data, date)
+  cycles = return_cycles_from_date(data, date)
+
+  totals = []
+
+  cycles.each do |cycle|
+    totals << cycle[:cycle_duration]
+  end
+
+  formatted_duration(totals.sum)
+end
+
 def generate_date_list(data)
-  @list = []
+  @list = {}
 
   data.each do |cycle|
-    date = cycle[:focus_start_time].strftime("%d-%m-%Y")
-    @list << date unless @list.include?(date)
+    date = cycle[:focus_start_time].strftime("%m-%d-%Y")
+    @list[date] = total_time_for_date(data, date) unless @list.include?(date)
   end
 
   @list
 end
 
 def load_user_data
+  user = session[:username]
+
   if ENV["RACK_ENV"] == "test"
     YAML.load(File.read("test/data/user_data.yml"))
+  elsif File.exist?("data/#{user}_data.yml")
+    YAML.load(File.read("data/#{user}_data.yml"))
   else
-    YAML.load(File.read("data/user_data.yml"))
+    []
   end
 end
 
 def return_cycles_from_date(data, date)
   data.select do |cycle|
-    cycle[:focus_start_time].strftime("%d/%m/%Y") == date
+    cycle[:focus_start_time].strftime("%m-%d-%Y") == date
   end
 end
 
@@ -207,21 +253,37 @@ def unique?(username, data)
   !data.include?(username)
 end
 
+def reset_timer
+  session[:focus] = false
+  session[:accumulated_rest_time] = 0
+  session[:focus_start_time] = nil
+  session[:rest_start_time] = nil
+  session[:elapsed_time_rested] = 0
+  session[:elapsed_time_focused] = 0
+end
+
+def render_markdown(text)
+  markdown = Redcarpet::Markdown.new(Redcarpet::Render::HTML)
+  markdown.render(text)
+end
+
+def invalid?(username, password)
+  username.empty? || password.empty?
+end
+
 get "/" do
   if !session[:focus] && !end_of_cycle?
+
      erb :home
   elsif session[:focus] == true
     @focus_start_time = format_time_object(session[:focus_start_time])
     @suggested_rest_time = format_time_object(calculate_suggested_rest_time)
-    # @data = YAML.load(File.read("data/user_data.yml"))
-    # @accumulated_rest_time = format_seconds(session[:accumulated_rest_time])
+
     erb :focus
-    # "#{session[:focus]}"
   else
     @rest_mode_start_time = format_time_object(session[:rest_start_time])
     session[:next_suggested_focus_mode] = session[:rest_start_time] + session[:accumulated_rest_time]
     @next_suggested_focus_message = calculate_next_suggested_focus_session
-    # @accumulated_rest_time = format_seconds(session[:accumulated_rest_time])
 
     erb :rest
   end
@@ -231,13 +293,13 @@ post "/focus" do
   session[:focus] = true
 
   if end_of_cycle?
-    set_rest_end_time
+    set_time("rest end")
     log_cycle
     session[:focus_start_time] = session[:rest_end_time]
     session[:elapsed_time_rested] = calculate_time_rested
     decrement_accumulated_rest_time
   else
-    set_focus_start_time
+    set_time("focus start")
   end
 
   redirect "/"
@@ -246,7 +308,7 @@ end
 post "/rest" do
   session[:focus] = false
 
-  set_rest_start_time
+  set_time("rest start")
   calculate_elapsed_time_focused
   calculate_new_rest_time
   incriment_accumulated_rest_time
@@ -260,8 +322,9 @@ get "/log" do
 end
 
 get "/log/:date" do
-  @date = params[:date].gsub('-', '/')
+  @date = params[:date]
   data = load_user_data
+  @total = total_time_for_date(data, @date)
   @data = return_cycles_from_date(data, @date)
 
   erb :date
@@ -289,6 +352,7 @@ post "/sign_in" do
 
   if valid_credentials?(username, password)
     session[:username] = username
+    reset_timer
     redirect "/" # redirect produces a 302 Found status code
   else
     session[:message] = "Invalid Credentials."
@@ -299,6 +363,7 @@ end
 
 get "/sign_out" do
   session.delete(:username)
+  reset_timer
 
   redirect "/"
 end
@@ -309,17 +374,30 @@ end
 
 post "/sign_up" do
   username = params[:username]
-  password = BCrypt::Password.create(params[:password]).to_s
+  password = params[:password]
   data = load_users
 
-  if unique?(username, data)
+  if invalid?(username, password)
+    status 422
+    session[:message] = "Please enter a username and password."
+
+    erb :sign_up
+  elsif unique?(username, data)
+    password = BCrypt::Password.create(password).to_s
     data[username] = password
     write_to_users(data)
     session[:message] = "Account successfully created."
+
     redirect "/sign_in"
   else
     status 422
     session[:message] = "That username is already taken."
+
     erb :sign_up
   end
+end
+
+get "/about" do
+  content = File.read("readme.md")
+  erb render_markdown(content)
 end

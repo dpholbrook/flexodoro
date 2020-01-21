@@ -8,7 +8,9 @@
     <%= session.delete(:message) %>
     <a href = "/">home</a>
     |
-    <a href = "/log"><%= session[:username] %></a>
+    <a href = "/log"><%= session[:username] ? session[:username] : "guest" %></a>
+    |
+    <a href = "/about">about</a>
     |
     <% if session[:username] %>
       <a href = "/sign_out">sign out</a>
@@ -25,7 +27,7 @@
   </body>
 
   <p></p>
-  <form action="/reset" method="post">
+  <!-- <form action="/reset" method="post">
     <input type="submit" value="Reset" />
-  </form>
+  </form> -->
 </html>

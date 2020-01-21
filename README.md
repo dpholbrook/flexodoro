@@ -1,34 +1,23 @@
 ## Flexodoro
 
-The Pomodoro Technique is very helpful for studying. The basic premise is that you focus for 25 minutes and then you take a 5 minute break. The technique helps increase focus and productivity. It also helps avoid procrastinating (just start the timer). The problem that I have run into with my Pomodoro timer is that it often interrupts my work flow. The solution is Flexodoro, a flexible Pomodoro Timer.
-There are two parts to Flexodoro: Focus Mode and Rest Mode. The more time you focus, the more time you get to rest. Specifically, for every 5 minutes that you focus, you get 1 minute of Rest.
+The Pomodoro Technique increases productivity by encouraging periods of intense focus that are broken up by intervals of rest.  A standard Pomodoro cycle is 25 minutes of focus followed by 5 minutes of rest.
 
-After 25 consecutive minutes in focus mode, a beep will notify you that it is time to take a break. But, if you are in the middle of something, you can keep going until you are finished or get tired. You can even adjust the beep time in settings.
+The problem with traditional Pomodoro timers is that the 25 minute timer often interrupts work flow. The solution is a flexible Pomodoro timer that only suggests these intervals but does not require them.
 
-When you are ready to rest, click the Rest button and the Rest Countdown will begin. When your rest time is expired, a timer will go off informing you that it is time to get back to work. If you don’t want to rest for the full amount of allocated time to rest, you can prematurely go back into focus mode. If you rest for more rest time than you have banked, your rest time goes into the negative numbers. It’s flexible.
+Flexodoro is a flexible Pomodoro time tracker that uses the 25 to 5 ratio to provide suggested focus and rest times. Depending on your work flow, you can enter focus mode or rest mode at will and Flexodoro will adjust your next suggested cycle accordingly.
 
-User logs in
+ Flexodoro Provides:
+  *Suggested focus and rest intervals based on the 5 to 1 ratio
+  *Tracks and records each cycle by date
 
-User clicks focus button
-New rest time is added to existing rest time and saved
-Starts focus timer
-Button turns into Rest button
+Flexodoro Does Not Provide:
+  *An actual in browser timer
 
-User clicks Rest button
-Focus time is calculated
-Focus time is saved or recorded in YAML file
-Rest time is calculated
-Rest countdown begins
-
-User views history
-Shows focus time, rest time, and total study hours for the day.
-
-t = Process.clock_gettime(Process::CLOCK_MONOTONIC)
-# => 2810266.714992
-t / (24 * 60 * 60.0) # time / days
-# => 32.52623512722222
-starting = Process.clock_gettime(Process::CLOCK_MONOTONIC)
-# time consuming operation
-ending = Process.clock_gettime(Process::CLOCK_MONOTONIC)
-elapsed = ending - starting
-elapsed # => 9.183449000120163 seconds
+To Use:
+  *You can use as a guest but this is not recommended
+  *Click Sign Up on the Sign In Page
+  *Sign in
+  *Click focus to start your session
+  *Once started, you are either in focus mode or rest mode
+  *Click your username to view your time tracker data
+  *To end your session, sign out

@@ -7,5 +7,6 @@ gem "rack-test"
 gem "minitest"
 gem "pry"
 gem "bcrypt"
+gem "redcarpet"
 
 ruby "2.4.4"

@@ -1,5 +1,9 @@
-<% generate_date_list(@data).each do |date| %>
-  <p>
-    <a href='/log/<%= date %>'><%= date %></a>
-  </p>
+<% if @data.empty? %>
+  <p> You do not have any focus cycle data yet. </p>
+<% else %>
+  <% generate_date_list(@data).each do |date, total| %>
+    <p>
+      <a href='/log/<%= date %>'><%= date %> --- <%= total %></a>
+    </p>
+  <% end %>
 <% end %>
