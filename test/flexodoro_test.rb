@@ -46,7 +46,7 @@ class AppTest < Minitest::Test
   def test_first_focus_button_click
     post "/focus"
     assert_equal 302, last_response.status
-    assert_equal Time.new(2020, 1, 12, 8, 0, 0), session[:focus_start_time]
+    assert_equal Time.new(2020, 1, 12, 8, 0, 0), session[:current_cycle].focus_start
     assert_equal true, session[:focus]
 
     get last_response["Location"]
@@ -54,16 +54,15 @@ class AppTest < Minitest::Test
   end
 
   def test_second_focus_button_click
-    create_yaml_file "user_data.yml", "[]"
+    create_yaml_file "user_data.yml", "{}"
     post "/focus", {}, { "rack.session" => {
-                                             focus_start_time: Time.new(2020, 1, 12, 7, 30, 0),
-                                             rest_start_time: Time.new(2020, 1, 12, 7, 55, 0),
-                                             accumulated_rest_time: 300
+                                             current_cycle: new_cycle,
+                                             rest_reserves: 300
                                             } }
     assert_equal 302, last_response.status
-    assert_equal Time.new(2020, 1, 12, 8, 0, 0), session[:rest_end_time]
-    assert_equal 300, session[:elapsed_time_rested]
-    assert_equal 0, session[:accumulated_rest_time]
+    assert_equal Time.new(2020, 1, 12, 8, 30, 0), session[:current_cycle].rest_end
+    assert_equal 300, session[:current_cycle].rest_duration
+    assert_equal 0, session[:rest_reserves]
     assert_equal true, session[:focus]
 
     get last_response["Location"]
@@ -73,25 +72,24 @@ class AppTest < Minitest::Test
   def test_focus
     get "/", {}, { "rack.session" => {
                                       focus: true,
-                                      focus_start_time: Time.new(2020, 1, 12, 8, 0, 0)
+                                      current_cycle: new_cycle
                                       } }
 
     assert_equal 200, last_response.status
-    suggested_rest_time = session[:focus_start_time] + SECONDS_PER_POMODORO
-    assert_includes last_response.body, "#{format_time_object(suggested_rest_time)}"
+    assert_includes last_response.body, "Rest at: 08:25:00 AM"
     assert_includes last_response.body, %q(form action="/rest" method="post")
   end
 
   def test_rest_button
     post "/rest", {}, { "rack.session" => {
-                                                            focus_start_time: Time.new(2020, 1, 12, 8, 0, 0),
-                                                            accumulated_rest_time: 0
-                                                            } }
+                                            current_cycle: new_cycle,
+                                            accumulated_rest_time: 0
+                                            } }
     assert_equal 302, last_response.status
     assert_equal false, session[:focus]
-    assert_equal 1500, session[:elapsed_time_focused]
-    assert_equal 300, session[:new_rest_time_earned]
-    assert_equal 300, session[:accumulated_rest_time]
+    assert_equal 1500, session[:current_cycle].focus_duration
+    assert_equal 300, session[:current_cycle].rest_time_earned
+    assert_equal 300, session[:rest_reserves]
 
     get last_response["Location"]
     assert_equal 200, last_response.status
@@ -101,20 +99,19 @@ class AppTest < Minitest::Test
   def test_rest
     get "/", {}, { "rack.session" => {
                                       focus: false,
-                                      rest_start_time: Time.new(2020, 1, 12, 8, 25, 0),
-                                      accumulated_rest_time: 300
+                                      rest_reserves: 300,
+                                      current_cycle: new_cycle
                                      }}
 
     assert_equal 200, last_response.status
-    assert_includes last_response.body, "Focus at:"
-    assert_equal Time.new(2020, 1, 12, 8, 30, 0), session[:next_suggested_focus_mode]
+    assert_includes last_response.body, "Focus at: 08:30:00 AM"
   end
 
   def test_rest_with_no_reserves
     get "/", {}, { "rack.session" => {
                                         focus: false,
-                                        rest_start_time: Time.new(2020, 1, 12, 8, 25, 0),
-                                        accumulated_rest_time: -120
+                                        current_cycle: new_cycle,
+                                        rest_reserves: -120
                                        }}
 
     assert_equal 200, last_response.status
@@ -122,20 +119,17 @@ class AppTest < Minitest::Test
   end
 
   def test_log
-    create_yaml_file("user_data.yml", "[]")
+    create_yaml_file("user_data.yml", "{}")
 
-    post "/focus", {}, { "rack.session" => {
-                                            focus_start_time: Time.new(2020, 1, 12, 7, 30, 0),
-                                            rest_start_time: Time.new(2020, 1, 12, 7, 55, 0)
-                                            }}
+    post "/focus", {}, { "rack.session" => {current_cycle: new_cycle}}
     get "/log"
     assert_equal 200, last_response.status
-    assert_includes last_response.body, "01-12-2020"
+    assert_includes last_response.body, "2020-01-12"
 
-    get "/log/01-12-2020"
+    get "/log/2020-01-12"
     assert_equal 200, last_response.status
-    assert_includes last_response.body, "01-12-2020"
-    assert_includes last_response.body, "Focus: 07:30:00 AM - 07:55:00 AM"
+    assert_includes last_response.body, "2020-01-12"
+    assert_includes last_response.body, "Focus: 08:00:00 AM - 08:25:00 AM"
   end
 
   def test_sign_up_form
@@ -166,6 +160,9 @@ class AppTest < Minitest::Test
   end
 
   def test_sign_in
+    create_yaml_file("users.yml", "{}")
+    post "/sign_up", { username: "user", password: "password" }
+
     post "/sign_in", { username: "user", password: "password" }
     assert_equal 302, last_response.status
 
@@ -175,6 +172,9 @@ class AppTest < Minitest::Test
   end
 
   def test_invalid_sign_in
+    create_yaml_file("users.yml", "{}")
+    post "/sign_up", { username: "user", password: "password" }
+
     post "/sign_in", { username: "bad_user", password: "password" }
     assert_equal 422, last_response.status
 
@@ -182,7 +182,5 @@ class AppTest < Minitest::Test
     assert_includes last_response.body, "bad_user"
     assert_includes last_response.body, %q(<button type="submit">Sign In)
   end
-
-  
 
 end

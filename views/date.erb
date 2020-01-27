@@ -1,7 +1,7 @@
-<h2> <%= @date %> -- <%= @total %> </h2>
-<% @data.each_with_index do |cycle, idx| %>
+<h2> <%= @date %> -- <%= formatted(@total_duration_for_date) %> </h2>
+<% @data_for_date.each_with_index do |cycle, idx| %>
   <h3> <%= idx + 1 %> </h3>
-  <p>Focus: <%= format_time_object(cycle[:focus_start_time])%> - <%= format_time_object(cycle[:rest_start_time])%></p>
-  <p>Rest: <%= format_time_object(cycle[:rest_start_time])%> - <%= format_time_object(cycle[:rest_end_time])%></p>
-  <p>Total: <%= formatted_duration(cycle[:cycle_duration]) %></p>
+  <p>Focus: <%= stringify(cycle[:focus_start])%> - <%= stringify(cycle[:rest_start])%></p>
+  <p>Rest: <%= stringify(cycle[:rest_start])%> - <%= stringify(cycle[:rest_end])%></p>
+  <p>Total: <%= formatted(cycle[:duration]) %></p>
 <% end %>

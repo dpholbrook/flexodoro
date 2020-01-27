@@ -1,10 +1,7 @@
 <h1> Focus Mode </h1>
-<h2> Started at: <%= @focus_start_time %> </h2>
-<h2> Rest at: <%= @suggested_rest_time %> </h2>
+<h2> Started at: <%= stringify(@focus_start) %> </h2>
+<h2> Rest at: <%= stringify(@suggested_rest) %> </h2>
 
 <form action="/rest" method="post">
   <input type="submit" value="Rest" />
 </form>
-
-<!-- <p> <%= @data %> </p> -->
-<!-- <h3> Rest Reserves: <%= @accumulated_rest_time %> seconds. <h3> -->

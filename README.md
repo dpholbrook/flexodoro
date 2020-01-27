@@ -6,9 +6,11 @@ The problem with traditional Pomodoro timers is that the 25 minute timer often i
 
 Flexodoro is a flexible Pomodoro time tracker that uses the 25 to 5 ratio to provide suggested focus and rest times. Depending on your work flow, you can enter focus mode or rest mode at will and Flexodoro will adjust your next suggested cycle accordingly.
 
- Flexodoro Provides:
-  *Suggested focus and rest intervals based on the 5 to 1 ratio
-  *Tracks and records each cycle by date
+Flexodoro Provides:
+1. Suggested focus and rest intervals based on the 5 to 1 ratio
+2. Tracks and records each cycle by date
+
+Does this work `to add code?`
 
 Flexodoro Does Not Provide:
   *An actual in browser timer

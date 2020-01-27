@@ -6,6 +6,7 @@ gem "erubis"
 gem "rack-test"
 gem "minitest"
 gem "pry"
+gem "pry-byebug"
 gem "bcrypt"
 gem "redcarpet"
 
