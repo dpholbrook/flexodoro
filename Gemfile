@@ -11,3 +11,7 @@ gem "bcrypt"
 gem "redcarpet"
 
 ruby "2.4.4"
+
+group :production do
+  gem "puma"
+end

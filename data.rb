@@ -4,7 +4,7 @@ class Data
     def load_user_data(username)
       if ENV['RACK_ENV'] == 'test'
         YAML.load(File.read('test/data/user_data.yml'))
-      elsif File.exist?('data/#{username}_data.yml')
+      elsif File.exist?("data/#{username}_data.yml")
         YAML.load(File.read("data/#{username}_data.yml"))
       else
         {}
