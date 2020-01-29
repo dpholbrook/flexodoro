@@ -24,10 +24,14 @@ Flexodoro is a flexible Pomodoro time tracker that uses the 25 to 5 ratio to pro
   * Click focus to start your session
   * Once started, you are either in focus mode or rest mode
   * Click your username to view your time tracker data
-  * Sign out to end your session
+
+### Guest Use:
+  * Custom local time zone can not be set (defaults to UTC)
+  * Time tracking data is not saved to your personal account
 
 ### Issues:
   * Does not use https so do not use a password that you use for other accounts
 
 ### Future Features:
   * In browser timer
+  * Client time zone recognition

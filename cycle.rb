@@ -3,16 +3,13 @@ class Cycle
   attr_reader :focus_start, :rest_start, :rest_duration, :focus_duration,
               :rest_end
 
-  def initialize
-    @focus_start = Time.new
+  def initialize(time_zone)
+    @time_zone_offset = time_zone * SECONDS_PER_HOUR
+    @focus_start = set_time
   end
 
-  def start_rest
-    @rest_start = Time.new
-  end
-
-  def end_rest
-    @rest_end = Time.new
+  def set_time
+    Time.new + @time_zone_offset
   end
 
   def calculate_rest_duration
@@ -49,7 +46,7 @@ class Cycle
       if ENV['RACK_ENV'] == 'test'
         Time.new(2020, 1, 12, 8, 25, 0)
       else
-        Time.new
+        set_time
       end
   end
 
@@ -58,14 +55,14 @@ class Cycle
       if ENV['RACK_ENV'] == 'test'
         Time.new(2020, 1, 12, 8, 30, 0)
       else
-        Time.new
+        set_time
       end
   end
 
   def test_cycle
-    @focus_start = Time.new(2020, 1, 12, 8, 0, 0)
-    @rest_start = Time.new(2020, 1, 12, 8, 25, 0)
-    @rest_end = Time.new(2020, 1, 12, 8, 30, 0)
+    @focus_start = Time.new(2020, 1, 12, 8, 0, 0) + @time_zone_offset
+    @rest_start = Time.new(2020, 1, 12, 8, 25, 0) + @time_zone_offset
+    @rest_end = Time.new(2020, 1, 12, 8, 30, 0) + @time_zone_offset
     calculate_rest_duration
     self
   end

@@ -17,13 +17,21 @@ end
 
 before do
   session[:rest_reserves] ||= 0
+  session[:time_zone] ||= 0
+  session[:username] ||= 'guest'
 end
 
 SECONDS_PER_POMODORO = 1500
+TIME_ZONES = (-12..12)
+SECONDS_PER_HOUR = 3600
 
 helpers do
   def stringify(time)
     time.strftime('%I:%M:%S %p')
+  end
+
+  def round_to_minutes(time)
+    time.strftime('(%m/%d) %I:%M %p')
   end
 
   def formatted(total_seconds)
@@ -32,6 +40,11 @@ helpers do
     seconds = total_seconds % 60
 
     format('%02d:%02d:%02d', hours, minutes, seconds)
+  end
+
+  def current_local_time(time_zone, utc)
+    local_time = utc + (time_zone * SECONDS_PER_HOUR)
+    round_to_minutes(local_time)
   end
 end
 
@@ -85,7 +98,7 @@ def next_focus
   end
 end
 
-def reset_timer
+def reset_tracker
   session[:focus] = false
   session[:rest_reserves] = 0
   session.delete(:current_cycle)
@@ -106,19 +119,23 @@ end
 
 def new_cycle
   if ENV['RACK_ENV'] == 'test'
-    Cycle.new.test_cycle
+    Cycle.new(session[:time_zone]).test_cycle
   else
-    Cycle.new
+    Cycle.new(session[:time_zone])
   end
 end
 
 get '/' do
+  reset_tracker
+
+  erb :home
+end
+
+get '/tracker' do
   cycle = session[:current_cycle]
+  redirect '/' unless cycle
 
-  if new_session?
-
-    erb :home
-  elsif focus_mode?
+  if focus_mode?
     @focus_start = cycle.focus_start
     @suggested_rest = suggested_rest_time
 
@@ -136,21 +153,28 @@ get '/sign_in' do
 end
 
 get '/sign_up' do
+  @utc = Time.now
+
   erb :sign_up
 end
 
 post '/sign_up' do
-  username = params[:username].strip
+  username = params[:username]
   password = params[:password]
+  time_zone = params[:time_zone]
 
-  invalid_sign_up_message = User.invalid_sign_up_message(username, password)
+  invalid_sign_up_message =
+    User.invalid_sign_up_message(username, password, time_zone)
   if invalid_sign_up_message
     session[:message] = invalid_sign_up_message
     status 422
 
+    @utc = Time.now
     erb :sign_up
   else
-    User.create_account(username, password)
+    time_zone = time_zone.to_i
+
+    User.create_account(username, password, time_zone)
     session[:message] = 'Account successfully created.'
 
     redirect '/sign_in'
@@ -163,7 +187,7 @@ post '/sign_in' do
 
   if User.valid_credentials?(username, password)
     session[:username] = username
-    reset_timer
+    session[:time_zone] = User.time_zone(username)
 
     redirect '/'
   else
@@ -175,7 +199,7 @@ end
 
 get '/sign_out' do
   session.delete(:username)
-  reset_timer
+  session[:time_zone] = 0
 
   redirect '/'
 end
@@ -193,7 +217,7 @@ post '/focus' do
 
   session[:current_cycle] = new_cycle
 
-  redirect '/'
+  redirect '/tracker'
 end
 
 post '/rest' do
@@ -204,7 +228,7 @@ post '/rest' do
   cycle.calculate_focus_duration
   increment_rest_reserves
 
-  redirect '/'
+  redirect '/tracker'
 end
 
 get '/log' do
@@ -228,7 +252,7 @@ get '/about' do
 end
 
 post '/reset' do
-  reset_timer
+  reset_tracker
 
   redirect '/'
 end
