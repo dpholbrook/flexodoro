@@ -247,7 +247,7 @@ get '/log/:date' do
 end
 
 get '/about' do
-  content = File.read('readme.md')
+  content = File.read('README.md')
   erb render_markdown(content)
 end
 
