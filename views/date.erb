@@ -1,4 +1,4 @@
-<h2> <%= @date %> -- <%= formatted(@total_duration_for_date) %> </h2>
+<h2> <%= @date %> | <%= formatted(@total_duration_for_date) %> </h2>
 <% @data_for_date.each_with_index do |cycle, idx| %>
   <h3> <%= idx + 1 %> </h3>
   <p>Focus: <%= stringify(cycle[:focus_start])%> - <%= stringify(cycle[:rest_start])%></p>

@@ -8,7 +8,7 @@
     <%= session.delete(:message) %>
     <a href = "/tracker">flexodoro</a>
     |
-    <a href = "/log"><%= session[:username] == 'guest' ? session[:username] : "guest" %></a>
+    <a href = "/log"><%= session[:username] != 'guest' ? session[:username] : "guest" %></a>
     |
     <a href = "/about">about</a>
     |

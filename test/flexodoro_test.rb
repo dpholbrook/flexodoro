@@ -183,7 +183,7 @@ class AppTest < Minitest::Test
   def test_sign_up_without_username_or_password
     post '/sign_up', username: '', password: '', time_zone: ''
     assert_equal 422, last_response.status
-    assert_includes last_response.body, 'Please enter a username and password.'
+    assert_includes last_response.body, 'Please enter a valid username and password.'
   end
 
   def test_sign_up_without_time_zone
