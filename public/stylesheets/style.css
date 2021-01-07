@@ -1,0 +1,166 @@
+html {
+  font-family: Helvetica, arial, sans-serif;
+  font-size: 15px;
+  font-weight: 100;
+}
+
+.border {
+  width: 500px;
+  margin: 0 auto;
+}
+
+header, main, footer {
+  text-align: center;
+}
+
+header p {
+  color: red;
+}
+
+h1, h2, h3, p {
+  font-weight: 100;
+}
+
+nav ul {
+  display: inline-block;
+  list-style-type: none;
+  padding: 0;
+}
+
+nav ul li {
+  display: inline-block;
+}
+
+a, button {
+  font-size: 1rem;
+  padding: .75em 0;
+  /* background-color: white; */
+  /* border-radius: 15px; */
+  /* color: black; */
+  text-decoration: none;
+  width: 100px;
+  margin: 0 5px;
+  border: 1px solid black;
+}
+
+a, button, .big-button {
+  background-color: white;
+  color: black;
+  border: 1px solid black;
+  font-weight: 100;
+}
+
+.big-button {
+  margin-bottom: 100px;
+}
+
+.big-button {
+  font-size: 2rem;
+  padding: 1em 0;
+  width: 150px;
+}
+
+form {
+  margin-top: 100px;
+}
+
+a {
+  text-decoration: none;
+  display: inline-block;
+}
+
+a:hover, button:hover, .big-button:hover {
+  background-color: #C0C0C0;
+}
+
+h1 {
+  font-size: 5rem;
+  font-weight: 100;
+}
+
+main {
+  margin-bottom: 100px;
+}
+
+h2 {
+  font-size: 2rem;
+  font-weight: 100;
+}
+
+.date table {
+  margin: 0 auto;
+  width: 100%;
+  border-collapse: collapse;
+  border: 1px solid black;
+}
+
+.date table th, .date table td {
+  border: 1px solid black;
+  padding: .5em;
+}
+
+.about {
+  font-weight: 100;
+}
+
+.about p, .about ul {
+  font-size: 1.5rem;
+  line-height: 1.5em;
+  text-align: left;
+}
+
+.form form {
+  text-align: left;
+  border: 1px solid black;
+  padding: 1rem;
+  font-size: 1.5rem;
+  box-sizing: border-box;
+  width: 100%;
+}
+
+.form dt {
+  display: inline-block;
+  width: 30%;
+  /* outline: 1px solid red; */
+  /* font-size: 1.5rem; */
+  box-sizing: border-box;
+}
+
+.form dd {
+  display: inline-block;
+  width: 60%;
+  /* outline: 1px solid red; */
+  box-sizing: border-box;
+}
+
+.form input {
+  width: 100%;
+  height: 2rem;
+}
+
+.select-wrapper {
+  height: 1.5em;
+  width: 100%;
+  position: relative;
+}
+
+.select-wrapper::after {
+  content: "▼";
+  font-size: 1rem;
+  top: 8px;
+  right: 10px;
+  position: absolute;
+}
+
+.form select {
+  -webkit-appearance: none;
+  appearance: none;
+  height: 100%;
+  width: 100%;
+}
+
+.form form p {
+  color: red;
+  display: inline-block;
+  font-size: 1rem;
+}

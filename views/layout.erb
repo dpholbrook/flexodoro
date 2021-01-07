@@ -1,27 +1,59 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+  <head>
+    <meta charset="utf-8">
+    <title>Flexodoro</title>
+    <!-- <link rel="stylesheet" href="/stylesheets/whitespace-reset.css"> -->
+    <link rel="stylesheet" href="/stylesheets/style.css" />
+  </head>
+  <body>
+    <div class="border">
+      <header>
+        <p><%= session.delete(:message) %></p>
+        <nav>
+          <ul>
+            <li>
+              <a href = "/tracker">home</a>
+            </li>
+            <li>
+              <a href = "/log">log</a>
+            </li>
+            <li>
+              <a href = "/about">about</a>
+            </li>
+            <li>
+              <% if session[:username] != 'guest' %>
+                <a href = "/sign_out">sign out</a>
+              <% else %>
+              <a href = "/sign_in">sign in</a>
+              <% end %>
+            </li>
+          </ul>
+        </nav>
+        <h1>Flexodoro</h1>
+      </header>
+      <main>
+        <%== yield %>
+      </main>
+      <footer>
+        <p>
+          Signed in as <%= session[:username] != 'guest' ? session[:username] : "guest" %>
+        </p>
+      </footer>
+    </div>
+  </body>
+</html>
+<!--
 <!doctype html>
 <html>
   <head>
     <title>Flexodoro</title>
   </head>
 
-  <header>
-    <%= session.delete(:message) %>
-    <a href = "/tracker">flexodoro</a>
-    |
-    <a href = "/log"><%= session[:username] != 'guest' ? session[:username] : "guest" %></a>
-    |
-    <a href = "/about">about</a>
-    |
-    <% if session[:username] != 'guest' %>
-      <a href = "/sign_out">sign out</a>
-    <% else %>
-    <a href = "/sign_in">sign in</a>
-    <% end %>
-    <p></p>
-  </header>
+
 
   <body>
-    <%= yield %>
+
   </body>
 
   <p></p>
@@ -30,4 +62,4 @@
   </form> -->
 
 
-</html>
+<!-- </html> -->

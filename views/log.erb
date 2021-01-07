@@ -1,9 +1,11 @@
-<% if @dates_and_durations.empty? %>
-  <p> You do not have any focus cycle data yet. </p>
-<% else %>
-  <% @dates_and_durations.each do |date, duration| %>
-    <p>
-      <a href='/log/<%= date %>'><%= date %> --- <%= formatted(duration) %></a>
-    </p>
+
+<div class="log">
+  <% if @dates_and_durations.empty? %>
+    <h3>You do not have any focus cycle data yet.</h3>
+  <% else %>
+    <h2>Log</h2>
+    <% @dates_and_durations.each do |instance| %>
+        <a href='/log/<%= instance[:date] %>'><%= instance[:date] %></a>
+    <% end %>
   <% end %>
-<% end %>
+</div>

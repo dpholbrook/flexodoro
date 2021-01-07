@@ -9,6 +9,7 @@ gem "pry"
 gem "pry-byebug"
 gem "bcrypt"
 gem "redcarpet"
+gem "pg"
 
 ruby "2.4.4"
 

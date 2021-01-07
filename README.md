@@ -1,9 +1,3 @@
-# Flexodoro
-
-The Pomodoro Technique increases productivity with timed cycles of focus and rest.  A standard Pomodoro cycle is 25 minutes of focus followed by 5 minutes of rest.
-
-The problem with with this approach is that work flow can be interrupted with a rigid time shedule. The solution is a flexible Pomodoro timer that suggests focus and rest intervals but does not require them.
-
 Flexodoro is a flexible Pomodoro time tracker that uses the 25 to 5 ratio to provide suggested focus and rest times. Depending on your work flow, you can enter focus mode or rest mode at will and Flexodoro will adjust your next suggested cycle accordingly.
 
 ### Features:
@@ -35,5 +29,7 @@ Flexodoro is a flexible Pomodoro time tracker that uses the 25 to 5 ratio to pro
   * Does not use https so do not use a password that you use for other accounts
 
 ### Future Features:
+  * Persistent data storage
+  * Improved UI
   * In browser timer
   * Client time zone recognition

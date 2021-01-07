@@ -1,24 +1,38 @@
 require 'sinatra'
-require 'sinatra/reloader' if development?
 require 'tilt/erubis'
 require 'yaml'
 require 'bcrypt'
 require 'redcarpet'
-require 'pry' if development?
 
 require_relative 'user'
 require_relative 'cycle'
-require_relative 'data'
+require_relative 'database_persistence'
 
 configure do
   enable :sessions
   set :session_secret, 'secret'
 end
 
+configure(:development) do
+  require "sinatra/reloader"
+  require "pry"
+  also_reload "database_persistence.rb"
+  also_reload "user.rb"
+  also_reload "cycle.rb"
+  also_reload "style.css"
+end
+
+configure do
+  set :erb, :escape_html => true
+end
+
 before do
   session[:rest_reserves] ||= 0
   session[:time_zone] ||= 0
   session[:username] ||= 'guest'
+  session[:user_id] ||= 0
+  @user = User.new
+  @storage = DatabasePersistence.new
 end
 
 SECONDS_PER_POMODORO = 1500
@@ -77,22 +91,26 @@ def focus_deficit
 end
 
 def suggested_rest_time
-  session[:current_cycle].focus_start + SECONDS_PER_POMODORO + focus_deficit
+  cycle = session[:current_cycle]
+
+  cycle.focus_start + SECONDS_PER_POMODORO + focus_deficit + cycle.total_pauses
 end
 
 def rest_reserves_remaining?
-  next_suggested_focus =
-    session[:current_cycle].rest_start + session[:rest_reserves]
-
   next_suggested_focus > session[:current_cycle].rest_start
 end
 
+def next_suggested_focus
+  cycle = session[:current_cycle]
+
+  cycle.rest_start + session[:rest_reserves] + cycle.total_pauses
+end
+
 def next_focus
-  next_suggested_focus =
-    session[:current_cycle].rest_start + session[:rest_reserves]
+  cycle = session[:current_cycle]
 
   if rest_reserves_remaining?
-    "Focus at: #{stringify(next_suggested_focus)}"
+    "Focus suggested at: #{stringify(next_suggested_focus)}"
   else
     'Rest not recommended. You have no rest reserves.'
   end
@@ -104,10 +122,10 @@ def reset_tracker
   session.delete(:current_cycle)
 end
 
-def render_markdown(text)
-  markdown = Redcarpet::Markdown.new(Redcarpet::Render::HTML)
-  markdown.render(text)
-end
+# def render_markdown(text)
+#   markdown = Redcarpet::Markdown.new(Redcarpet::Render::HTML)
+#   markdown.render(text)
+# end
 
 def data_path
   if ENV['RACK_ENV'] == 'test'
@@ -135,7 +153,9 @@ get '/tracker' do
   cycle = session[:current_cycle]
   redirect '/' unless cycle
 
-  if focus_mode?
+  if session[:pause]
+    erb :pause
+  elsif focus_mode?
     @focus_start = cycle.focus_start
     @suggested_rest = suggested_rest_time
 
@@ -164,7 +184,7 @@ post '/sign_up' do
   time_zone = params[:time_zone]
 
   invalid_sign_up_message =
-    User.invalid_sign_up_message(username, password, time_zone)
+    @user.invalid_sign_up_message(username, password, time_zone)
   if invalid_sign_up_message
     session[:message] = invalid_sign_up_message
     status 422
@@ -174,7 +194,7 @@ post '/sign_up' do
   else
     time_zone = time_zone.to_i
 
-    User.create_account(username, password, time_zone)
+    @user.create_account(username, password, time_zone)
     session[:message] = 'Account successfully created.'
 
     redirect '/sign_in'
@@ -185,13 +205,16 @@ post '/sign_in' do
   username = params[:username]
   password = params[:password]
 
-  if User.valid_credentials?(username, password)
-    session[:username] = username
-    session[:time_zone] = User.time_zone(username)
+  user = @user.valid_user(username, password)
+
+  if user
+    session[:username] = user[:username]
+    session[:time_zone] = user[:time_zone].to_i
+    session[:user_id] = user[:id].to_i
 
     redirect '/'
   else
-    session[:message] = 'Invalid Credentials.'
+    session[:message] = 'Invalid username or password.'
     status 422
     erb :sign_in
   end
@@ -199,6 +222,7 @@ end
 
 get '/sign_out' do
   session.delete(:username)
+  session.delete(:user_id)
   session[:time_zone] = 0
 
   redirect '/'
@@ -212,7 +236,7 @@ post '/focus' do
     cycle.set_rest_end
     cycle.calculate_rest_duration
     decrement_rest_reserves
-    Data.log(cycle, session[:username])
+    @storage.log(cycle, session[:user_id])
   end
 
   session[:current_cycle] = new_cycle
@@ -232,27 +256,43 @@ post '/rest' do
 end
 
 get '/log' do
-  data = Data.load_user_data(session[:username])
-  @dates_and_durations = Data.dates_and_durations(data)
+  @dates_and_durations = @storage.dates_and_durations(session[:user_id])
 
   erb :log
 end
 
 get '/log/:date' do
   @date = params[:date]
-  @data_for_date = Data.load_user_data(session[:username])[@date]
-  @total_duration_for_date = Data.total_duration_for_date(@data_for_date)
+  @data_for_date = @storage.data_for_date(session[:user_id], @date)
+  @total_duration_for_date = @storage.total_duration_for_date(@date, session[:user_id])
 
   erb :date
 end
 
 get '/about' do
-  content = File.read('README.md')
-  erb render_markdown(content)
+  erb :about
 end
 
 post '/reset' do
   reset_tracker
 
+  redirect '/'
+end
+
+post '/pause' do
+  session[:pause] = true
+  session[:current_cycle].start_pause
+
+  redirect '/tracker'
+end
+
+post '/unpause' do
+  session[:pause] = false
+  session[:current_cycle].log_pause
+
+  redirect '/tracker'
+end
+
+not_found do
   redirect '/'
 end

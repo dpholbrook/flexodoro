@@ -6,6 +6,7 @@ class Cycle
   def initialize(time_zone)
     @time_zone_offset = time_zone * SECONDS_PER_HOUR
     @focus_start = set_time
+    @pauses = []
   end
 
   def set_time
@@ -13,11 +14,11 @@ class Cycle
   end
 
   def calculate_rest_duration
-    @rest_duration = @rest_end - @rest_start
+    @rest_duration = (@rest_end - @rest_start) - total_pauses
   end
 
   def calculate_focus_duration
-    @focus_duration = @rest_start - @focus_start
+    @focus_duration = (@rest_start - @focus_start) - total_pauses
   end
 
   def rest_time_earned
@@ -25,7 +26,7 @@ class Cycle
   end
 
   def total_duration
-    @total_duration = @rest_end - @focus_start
+    @total_duration = @rest_end - @focus_start - total_pauses
   end
 
   def data
@@ -65,5 +66,22 @@ class Cycle
     @rest_end = Time.new(2020, 1, 12, 8, 30, 0) + @time_zone_offset
     calculate_rest_duration
     self
+  end
+
+  def start_pause
+    @pause_start = set_time
+  end
+
+  def stop_pause
+    @pause_stop = set_time
+  end
+
+  def log_pause
+    stop_pause
+    @pauses << (@pause_stop - @pause_start)
+  end
+
+  def total_pauses
+    @pauses.sum
   end
 end

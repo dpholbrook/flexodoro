@@ -1,7 +1,11 @@
-<h1> Rest Mode <h1>
-<h2> Started at: <%= stringify(@rest_start) %> </h2>
 <h2> <%= @next_focus %> </h2>
-
 <form action="/focus" method="post">
-  <input type="submit" value="Focus" />
+  <input class="big-button" type="submit" value="Focus" />
 </form>
+
+<h3> Rest started at: <%= stringify(@rest_start) %> </h3>
+<h3></h3>
+
+<!-- <form action="/pause" method="post">
+  <input type="submit" value="Pause" />
+</form> -->

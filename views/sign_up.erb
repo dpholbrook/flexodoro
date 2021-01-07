@@ -1,22 +1,39 @@
-<form method="post" action="/sign_up">
-  <div>
-    <label for="username">Username:</label>
-    <input name="username" placeholder="" type="text" value="<%= params[:username] %>">
-  </div>
-  </div>
-    <label for="password">Password:</label>
-    <input name="password" placeholder="" type="password" value="<%= params[:password] %>">
-  </div>
-  <div>
-    <label for="time_zone">Local Time:</label>
-    <select name="time_zone">
-        <option value=""></option>
-      <% TIME_ZONES.each do |time_zone| %>
-        <option value="<%= time_zone %>"><%= current_local_time(time_zone, @utc) %> </option>
-      <% end %>
-    </select>
-  </div>
-  <div>
-    <button type="submit">Sign Up</button>
-  </div>
-</form>
+
+<div class="form">
+  <h2>Sign Up</h2>
+  <form method="post" action="/sign_up" class="credentials">
+    <dl>
+      <dt>
+        <label for="username">Username</label>
+      </dt>
+      <dd>
+        <input name="username" placeholder="" type="text" value="<%= params[:username] %>">
+      </dd>
+    </dl>
+    <dl>
+      <dt>
+        <label for="password">Password</label>
+      </dt>
+      <dd>
+        <input name="password" placeholder="" type="password" value="<%= params[:password] %>">
+      </dd>
+    </dl>
+    <dl>
+      <dt>
+        <label for="time_zone">Local Time</label>
+      </dt>
+      <dd>
+        <div class="select-wrapper">
+          <select name="time_zone">
+              <option value=""></option>
+            <% TIME_ZONES.each do |time_zone| %>
+              <option value="<%= time_zone %>"><%= current_local_time(time_zone, @utc) %> </option>
+            <% end %>
+          </select>
+        </div>
+      </dd>
+    </dl>
+      <button type="submit">Sign Up</button>
+      <p><%= session.delete(:message) %></p>
+  </form>
+</div>

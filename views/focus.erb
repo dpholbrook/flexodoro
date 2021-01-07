@@ -1,7 +1,10 @@
-<h1> Focus Mode </h1>
-<h2> Started at: <%= stringify(@focus_start) %> </h2>
-<h2> Rest at: <%= stringify(@suggested_rest) %> </h2>
-
+<h2>Rest suggested at: <%= stringify(@suggested_rest) %> </h2>
 <form action="/rest" method="post">
-  <input type="submit" value="Rest" />
+  <input class="big-button" type="submit" value="Rest" />
 </form>
+
+<h3> Focus started at: <%= stringify(@focus_start) %> </h3>
+
+<!-- <form action="/pause" method="post">
+  <input type="submit" value="Pause" />
+</form> -->
