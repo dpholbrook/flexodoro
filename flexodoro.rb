@@ -35,6 +35,10 @@ before do
   @storage = DatabasePersistence.new
 end
 
+after do 
+  @storage.disconnect
+end
+
 SECONDS_PER_POMODORO = 1500
 TIME_ZONES = (-12..12)
 SECONDS_PER_HOUR = 3600
